@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ChatGPT <chatgpt@example.com>
+Date: Wed, 25 Jun 2025 12:00:00 -0400
+Subject: [PATCH] Day1: Scaffold Foundation & Ingestion MVP
+
+---
+ .flake8                                       |  4 ++++
+ .gitignore                                   |  5 +++++
+ README.md                                     | 22 ++++++++++++++++++++++
+ requirements.txt                              |  6 ++++++
+ mypy.ini                                      |  4 ++++
+ .github/workflows/lint-test.yml               | 31 +++++++++++++++++++++++++++++++++++++
+ terraform/provider.tf                         | 14 ++++++++++++++
+ terraform/variables.tf                        |  6 ++++++
+ terraform/redis.tf                            |  6 ++++++
+ terraform/influxdb.tf                         | 10 ++++++++++
+ terraform/cloud_functions.tf                  |  1 +
+ ingestion_service/app/config.py               | 19 +++++++++++++++++++
+ ingestion_service/app/ingest.py                | 39 +++++++++++++++++++++++++++++++++++++++
+ ingestion_service/app/main.py                  | 18 ++++++++++++++++++
+ ingestion_service/app/consumer.py              | 29 +++++++++++++++++++++++++++++
+ ingestion_service/app/write_influx.py          | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ingest.py                          | 23 +++++++++++++++++++++++
+ tests/test_main.py                            | 18 ++++++++++++++++++
+ 18 files changed, 299 insertions(+)
+ create mode 100644 .flake8
+ create mode 100644 .gitignore
+ create mode 100644 README.md
+ create mode 100644 requirements.txt
+ create mode 100644 mypy.ini
+ create mode 100644 .github/workflows/lint-test.yml
+ create mode 100644 terraform/provider.tf
+ create mode 100644 terraform/variables.tf
+ create mode 100644 terraform/redis.tf
+ create mode 100644 terraform/influxdb.tf
+ create mode 100644 terraform/cloud_functions.tf
+ create mode 100644 ingestion_service/app/config.py
+ create mode 100644 ingestion_service/app/ingest.py
+ create mode 100644 ingestion_service/app/main.py
+ create mode 100644 ingestion_service/app/consumer.py
+ create mode 100644 ingestion_service/app/write_influx.py
+ create mode 100644 tests/test_ingest.py
+ create mode 100644 tests/test_main.py
+--- a/.flake8
++++ b/.flake8
+@@ -0,0 +1,4 @@
++[flake8]
++max-line-length = 88
++extend-ignore = E203, W503
++
+--- a/.gitignore
++++ b/.gitignore
+@@ -0,0 +1,5 @@
++venv/
++__pycache__/
++*.pyc
++.env
++terraform/.terraform/
+--- a/README.md
++++ b/README.md
+@@ -0,0 +1,22 @@
++# Stock Bot Ingestion Service
++
+> **Day 1: Foundation & Ingestion MVP**  
+>
+> Realtime Polygon tick ingestion into Redis & InfluxDB, with CI and IaC scaffolding.
++
+## 🗂️ Repo Structure
