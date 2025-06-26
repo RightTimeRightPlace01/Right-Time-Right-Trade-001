@@ -1,0 +1,582 @@
+```diff
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ChatGPT <chatgpt@example.com>
+Date: Wed, 25 Jun 2025 12:00:00 -0400
+Subject: [PATCH] Day1: Scaffold Foundation & Ingestion MVP
+
+---
+ .flake8                                       |  4 ++++
+ .gitignore                                   |  5 +++++
+ README.md                                     | 22 ++++++++++++++++++++++
+ requirements.txt                              |  6 ++++++
+ mypy.ini                                      |  4 ++++
+ .github/workflows/lint-test.yml               | 31 +++++++++++++++++++++++++++++++++++++
+ terraform/provider.tf                         | 14 ++++++++++++++
+ terraform/variables.tf                        |  6 ++++++
+ terraform/redis.tf                            |  6 ++++++
+ terraform/influxdb.tf                         | 10 ++++++++++
+ terraform/cloud_functions.tf                  |  1 +
+ ingestion_service/app/config.py               | 19 +++++++++++++++++++
+ ingestion_service/app/ingest.py                | 39 +++++++++++++++++++++++++++++++++++++++
+ ingestion_service/app/main.py                  | 18 ++++++++++++++++++
+ ingestion_service/app/consumer.py              | 29 +++++++++++++++++++++++++++++
+ ingestion_service/app/write_influx.py          | 45 +++++++++++++++++++++++++++++++++++++++++++++
+ tests/test_ingest.py                          | 23 +++++++++++++++++++++++
+ tests/test_main.py                            | 18 ++++++++++++++++++
+ 18 files changed, 299 insertions(+)
+ create mode 100644 .flake8
+ create mode 100644 .gitignore
+ create mode 100644 README.md
+ create mode 100644 requirements.txt
+ create mode 100644 mypy.ini
+ create mode 100644 .github/workflows/lint-test.yml
+ create mode 100644 terraform/provider.tf
+ create mode 100644 terraform/variables.tf
+ create mode 100644 terraform/redis.tf
+ create mode 100644 terraform/influxdb.tf
+ create mode 100644 terraform/cloud_functions.tf
+ create mode 100644 ingestion_service/app/config.py
+ create mode 100644 ingestion_service/app/ingest.py
+ create mode 100644 ingestion_service/app/main.py
+ create mode 100644 ingestion_service/app/consumer.py
+ create mode 100644 ingestion_service/app/write_influx.py
+ create mode 100644 tests/test_ingest.py
+ create mode 100644 tests/test_main.py
+--- a/.flake8
++++ b/.flake8
+@@ -0,0 +1,4 @@
++[flake8]
++max-line-length = 88
++extend-ignore = E203, W503
++
+--- a/.gitignore
++++ b/.gitignore
+@@ -0,0 +1,5 @@
++venv/
++__pycache__/
++*.pyc
++.env
++terraform/.terraform/
+--- a/README.md
++++ b/README.md
+@@ -0,0 +1,22 @@
++# Stock Bot Ingestion Service
++
+> **Day 1: Foundation & Ingestion MVP**  
+>
+> Realtime Polygon tick ingestion into Redis & InfluxDB, with CI and IaC scaffolding.
++
+## 🗂️ Repo Structure
+```
+
+.
+├── .github
+│   └── workflows/lint-test.yml
+├── terraform/
+│   ├── provider.tf
+│   ├── variables.tf
+│   ├── redis.tf
+│   ├── influxdb.tf
+│   └── cloud\_functions.tf
+├── ingestion\_service/
+│   ├── app/
+│   │   ├── config.py
+│   │   ├── ingest.py
+│   │   ├── main.py
+│   │   ├── consumer.py
+│   │   └── write\_influx.py
+│   └── venv/
+├── tests/
+│   ├── test\_ingest.py
+│   └── test\_main.py
+├── .flake8
+├── mypy.ini
+├── requirements.txt
+├── .gitignore
+└── README.md
+
+````
+
+## 🚀 Quickstart
+
+1. **Clone & branch**  
+   ```bash
+   git checkout -b feature/ingestion
+````
+
+2. **Configure**
+
+   * Copy `.env.sample` → `.env`
+   * Fill in Polygon, Redis, Influx creds
+
+3. **Dependencies**
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run**
+
+   ```bash
+   uvicorn ingestion_service.app.main:app --reload
+   python ingestion_service/app/consumer.py
+   python ingestion_service/app/write_influx.py
+   ```
+
+5. **Tests**
+
+   ```bash
+   pytest -q
+   ```
+
+\--- a/requirements.txt
++++ b/requirements.txt
+@@ -0,0 +1,6 @@
++fastapi
++uvicorn
++websockets
++redis
++influxdb-client
++pytest
+\--- a/mypy.ini
++++ b/mypy.ini
+@@ -0,0 +1,4 @@
++\[mypy]
++python\_version = 3.11
++disallow\_untyped\_defs = True
++ignore\_missing\_imports = True
+\--- a/.github/workflows/lint-test.yml
++++ b/.github/workflows/lint-test.yml
+@@ -0,0 +1,31 @@
++name: Lint & Test
+\+
++on: \[push, pull\_request]
+\+
++jobs:
+
+* lint:
+* runs-on: ubuntu-latest
+* steps:
+* ```
+   - uses: actions/checkout@v3
+  ```
+* ```
+   - uses: actions/setup-python@v4
+  ```
+* ```
+     with:
+  ```
+* ```
+       python-version: '3.11'
+  ```
+* ```
+   - run: pip install flake8 mypy pytest
+  ```
+* ```
+   - run: flake8 .
+  ```
+* ```
+   - run: mypy .
+  ```
+*
+* test:
+* runs-on: ubuntu-latest
+* needs: lint
+* steps:
+* ```
+   - uses: actions/checkout@v3
+  ```
+* ```
+   - uses: actions/setup-python@v4
+  ```
+* ```
+     with:
+  ```
+* ```
+       python-version: '3.11'
+  ```
+* ```
+   - run: pip install -r requirements.txt
+  ```
+* ```
+   - run: pytest --maxfail=1 --disable-warnings -q
+  ```
+
+\--- a/terraform/provider.tf
++++ b/terraform/provider.tf
+@@ -0,0 +1,14 @@
++terraform {
+
+* required\_providers {
+* redis = {
+* ```
+   source  = "cyrilgdn/redis"
+  ```
+* ```
+   version = "~>1.0"
+  ```
+* }
+* influxdb = {
+* ```
+   source  = "influxdata/influxdb"
+  ```
+* ```
+   version = "~>2.0"
+  ```
+* }
+* }
+  +}
+*
+
++provider "redis" { url = var.redis\_url }
++provider "influxdb" { url = var.influx\_url; token = var.influx\_token; org = var.influx\_org }
+\--- a/terraform/variables.tf
++++ b/terraform/variables.tf
+@@ -0,0 +1,6 @@
++variable "redis\_url" {
+
+* type = string
+  +}
+*
+
++variable "influx\_url" {
+
+* type = string
+  +}
+  +variable "influx\_token" { type = string }
+  +variable "influx\_org"   { type = string }
+  \--- a/terraform/redis.tf
+  +++ b/terraform/redis.tf
+  @@ -0,0 +1,6 @@
+  +resource "redis\_instance" "ticks" {
+* name        = "polygon-ticks"
+* memory\_size = 512
+* # network, auth, etc.
+
++}
+\--- a/terraform/influxdb.tf
++++ b/terraform/influxdb.tf
+@@ -0,0 +1,10 @@
++resource "influxdb\_bucket" "ticks" {
+
+* name   = "ticks"
+* org\_id = var.influx\_org
+*
+* retention\_rules {
+* type          = "expire"
+* every\_seconds = 604800  # 7 days
+* }
+  +}
+  \--- a/terraform/cloud\_functions.tf
+  +++ b/terraform/cloud\_functions.tf
+  @@ -0,0 +1 @@
+  +# TODO: add Cloud Functions for alerts/aggregation
+  \--- a/ingestion\_service/app/config.py
+  +++ b/ingestion\_service/app/config.py
+  @@ -0,0 +1,19 @@
+  +from pydantic import BaseSettings
+*
+*
+
++class Settings(BaseSettings):
+
+* POLYGON\_WS\_URL: str
+* POLYGON\_API\_KEY: str
+* REDIS\_URL: str
+* INFLUX\_URL: str
+* INFLUX\_TOKEN: str
+* INFLUX\_ORG: str
+* INFLUX\_BUCKET: str
+*
+* class Config:
+* ```
+     env_file = ".env"
+  ```
+*
+*
+
++settings = Settings()
+\--- a/ingestion\_service/app/ingest.py
++++ b/ingestion\_service/app/ingest.py
+@@ -0,0 +1,39 @@
++import json
++import websockets
++import redis.asyncio as aioredis
++from .config import settings
+\+
+\+
++async def normalize(raw: dict) -> dict:
+
+* """
+* Extract and normalize fields from raw Polygon tick.
+* """
+* return {
+* ```
+     "symbol": raw.get("sym"),
+  ```
+* ```
+     "price": raw.get("p"),
+  ```
+* ```
+     "timestamp": raw.get("t"),
+  ```
+* }
+*
+*
+
++async def connect\_polygon():
+
+* """
+* Connect to Polygon WebSocket, subscribe to trades, and push to Redis stream.
+* """
+* ws\_url = f"{settings.POLYGON\_WS\_URL}?apiKey={settings.POLYGON\_API\_KEY}"
+* async with websockets.connect(ws\_url) as ws:
+* ```
+     # Subscribe to all stock trades
+  ```
+* ```
+     await ws.send(json.dumps({"action": "subscribe", "params": "T.*"}))
+  ```
+*
+* ```
+     redis_client = aioredis.from_url(settings.REDIS_URL)
+  ```
+* ```
+     async for msg in ws:
+  ```
+* ```
+         data = json.loads(msg)
+  ```
+* ```
+         for raw_tick in data:
+  ```
+* ```
+             tick = await normalize(raw_tick)
+  ```
+* ```
+             # XADD to Redis stream "ticks"
+  ```
+* ```
+             await redis_client.xadd("ticks", tick)
+  ```
+
+\--- a/ingestion\_service/app/main.py
++++ b/ingestion\_service/app/main.py
+@@ -0,0 +1,18 @@
++import asyncio
++from fastapi import FastAPI
++from .ingest import connect\_polygon
+\+
++app = FastAPI(title="Stock Bot Ingestion")
+\+
+\+
+[+@app.on\_event](mailto:+@app.on_event)("startup")
++async def start\_polygon\_task():
+
+* """
+* Launch WebSocket ingestion loop on startup.
+* """
+* asyncio.create\_task(connect\_polygon())
+*
+*
+
+[+@app.get](mailto:+@app.get)("/health")
++async def health():
+
+* """
+* Simple health check endpoint.
+* """
+* return {"status": "ok"}
+  \--- a/ingestion\_service/app/consumer.py
+  +++ b/ingestion\_service/app/consumer.py
+  @@ -0,0 +1,29 @@
+  +import asyncio
+  +import redis.asyncio as aioredis
+  +from .config import settings
+*
+*
+
++async def consume():
+
+* """
+* Read from Redis stream "ticks" and log each entry.
+* """
+* r = aioredis.from\_url(settings.REDIS\_URL)
+* last\_id = "0-0"
+* while True:
+* ```
+     # Block up to 5s, max 10 entries per read
+  ```
+* ```
+     resp = await r.xread({"ticks": last_id}, block=5000, count=10)
+  ```
+* ```
+     if resp:
+  ```
+* ```
+         _, messages = resp[0]
+  ```
+* ```
+         for msg_id, fields in messages:
+  ```
+* ```
+             print(f"[{msg_id}] {fields}")
+  ```
+* ```
+             last_id = msg_id
+  ```
+* ```
+     await asyncio.sleep(0.1)
+  ```
+*
+*
+
++if **name** == "**main**":
+
+* asyncio.run(consume())
+  \--- a/ingestion\_service/app/write\_influx.py
+  +++ b/ingestion\_service/app/write\_influx.py
+  @@ -0,0 +1,45 @@
+  +import asyncio
+  +from influxdb\_client import InfluxDBClient, Point
+  +from influxdb\_client.client.write\_api import SYNCHRONOUS
+  +import redis.asyncio as aioredis
+  +from .config import settings
+*
+*
+
++async def write\_ticks():
+
+* """
+* Consume Redis stream "ticks", write each tick into InfluxDB.
+* """
+* client = InfluxDBClient(
+* ```
+     url=settings.INFLUX_URL,
+  ```
+* ```
+     token=settings.INFLUX_TOKEN,
+  ```
+* ```
+     org=settings.INFLUX_ORG,
+  ```
+* )
+* write\_api = client.write\_api(write\_options=SYNCHRONOUS)
+* r = aioredis.from\_url(settings.REDIS\_URL)
+* last\_id = "0-0"
+* while True:
+* ```
+     # Block up to 5s, max 20 entries per read
+  ```
+* ```
+     resp = await r.xread({"ticks": last_id}, block=5000, count=20)
+  ```
+* ```
+     if resp:
+  ```
+* ```
+         _, messages = resp[0]
+  ```
+* ```
+         for msg_id, fields in messages:
+  ```
+* ```
+             price = float(fields[b"price"])
+  ```
+* ```
+             p = (
+  ```
+* ```
+                 Point("ticks")
+  ```
+* ```
+                 .tag("symbol", fields[b"symbol"].decode())
+  ```
+* ```
+                 .field("price", price)
+  ```
+* ```
+             )
+  ```
+* ```
+             write_api.write(bucket=settings.INFLUX_BUCKET, record=p)
+  ```
+* ```
+             last_id = msg_id
+  ```
+* ```
+     await asyncio.sleep(0.1)
+  ```
+*
+*
+
++if **name** == "**main**":
+
+* asyncio.run(write\_ticks())
+  \--- a/tests/test\_ingest.py
+  +++ b/tests/test\_ingest.py
+  @@ -0,0 +1,23 @@
+  +import pytest
+*
+
++from ingestion\_service.app.ingest import normalize
+\+
+\+
+[+@pytest.mark.asyncio](mailto:+@pytest.mark.asyncio)
++async def test\_normalize():
+
+* raw = {"sym": "TSLA", "p": 720.5, "t": 1622548800000}
+* expected = {"symbol": "TSLA", "price": 720.5, "timestamp": 1622548800000}
+* result = await normalize(raw)
+* assert result == expected
+*
+
+[+@pytest.mark.asyncio](mailto:+@pytest.mark.asyncio)
++async def test\_normalize\_missing\_fields():
+
+* raw = {"sym": "AAPL"}
+* expected = {"symbol": "AAPL", "price": None, "timestamp": None}
+* result = await normalize(raw)
+* assert result == expected
+  \--- a/tests/test\_main.py
+  +++ b/tests/test\_main.py
+  @@ -0,0 +1,18 @@
+  +from fastapi.testclient import TestClient
+*
+
++from ingestion\_service.app.main import app
+\+
++client = TestClient(app)
+\+
++def test\_health():
+
+* response = client.get("/health")
+* assert response.status\_code == 200
+* assert response.json() == {"status": "ok"}
+*
+
++def test\_health\_content\_type():
+
+* response = client.get("/health")
+* assert response.headers\["content-type"].startswith("application/json")
+*
+
+---
+
+````
+
+**Instructions to apply:**
+
+1. Save the above diff to a file in your repo root, e.g. `day1-foundation.patch`.
+2. Run:
+   ```bash
+   git checkout -b feature/ingestion
+   git apply day1-foundation.patch
+   git add .
+   git commit -m "feat: Day 1 foundation & ingestion MVP"
+   git push -u origin feature/ingestion
+````
+
+3. Open a PR against `dev` (or `main`) when you’re ready.
+
+
